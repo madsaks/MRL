@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Editor</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <input type="file" id="uploadFile" accept=".docx,.pdf">
+    <button id="convertButton">Convert</button>
+    <div id="editor" contenteditable="true" width="100%" height="50%"></div>
+    <button onclick="saveAsDocx()">Save as DOCX</button>
+    <button onclick="saveAsHtml()">Save as HTML</button>
+    <button onclick="saveAsMarkdown()">Save as Markdown</button>
+    <button onclick="saveAsPdf()">Save as PDF</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.1/turndown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/0.3.1/html-docx.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
