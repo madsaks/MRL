@@ -1,0 +1,239 @@
+version: "3.9"
+
+networks:
+  portal_net:
+    internal: true
+
+volumes:
+  postgres_data:
+  nocobase_storage:
+  fider_storage:
+  bookstack_storage:
+  mariadb_data:
+  openproject_data:
+  n8n_data:
+  ollama_data:
+  caddy_data:
+  caddy_config:
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nocobase:
+    image: nocobase/nocobase:latest
+    environment:
+      APP_ENV: production
+      DB_DIALECT: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${NOCOBASE_DB_NAME}
+      DB_USER: ${NOCOBASE_DB_USER}
+      DB_PASSWORD: ${NOCOBASE_DB_PASSWORD}
+      APP_KEY: ${NOCOBASE_API_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - nocobase_storage:/app/nocobase/storage
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:13000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  fider:
+    image: getfider/fider:stable
+    environment:
+      BASE_URL: ${FIDER_URL}
+      DATABASE_URL: ${FIDER_DATABASE_URL}
+      JWT_SECRET: ${FIDER_JWT_SECRET}
+      EMAIL_NOREPLY: ${FIDER_EMAIL_NOREPLY}
+      SITE_NAME: Improvement Portal
+      EMAIL_SMTP_ENABLE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - fider_storage:/app
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+
+  mariadb:
+    image: mariadb:10.6
+    environment:
+      MYSQL_DATABASE: ${BOOKSTACK_DB_DATABASE}
+      MYSQL_USER: ${BOOKSTACK_DB_USERNAME}
+      MYSQL_PASSWORD: ${BOOKSTACK_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p${BOOKSTACK_DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:latest
+    environment:
+      PUID: 1000
+      PGID: 1000
+      APP_URL: ${BOOKSTACK_APP_URL}
+      DB_HOST: mariadb
+      DB_DATABASE: ${BOOKSTACK_DB_DATABASE}
+      DB_USERNAME: ${BOOKSTACK_DB_USERNAME}
+      DB_PASSWORD: ${BOOKSTACK_DB_PASSWORD}
+      APP_KEY: ${BOOKSTACK_APP_KEY}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - bookstack_storage:/config
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/status || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+
+  openproject:
+    image: openproject/community:14
+    environment:
+      OPENPROJECT_SECRET_KEY_BASE: ${OPENPROJECT_SECRET_KEY_BASE}
+      OPENPROJECT_HOST__NAME: ${OPENPROJECT_HOST__NAME}
+      OPENPROJECT_HTTPS: ${OPENPROJECT_HTTPS}
+    volumes:
+      - openproject_data:/var/openproject
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health_checks/default || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 6
+
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      N8N_HOST: n8n
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${N8N_URL}
+      GENERIC_TIMEZONE: UTC
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:11434/api/version || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      PORT: ${BACKEND_PORT}
+      LOG_LEVEL: ${BACKEND_LOG_LEVEL}
+      API_KEY: ${BACKEND_API_KEY}
+      NOCOBASE_URL: ${NOCOBASE_URL}
+      NOCOBASE_API_TOKEN: ${NOCOBASE_API_TOKEN}
+      FIDER_URL: ${FIDER_URL}
+      BOOKSTACK_URL: ${BOOKSTACK_URL}
+      OPENPROJECT_URL: ${OPENPROJECT_URL}
+      N8N_URL: ${N8N_URL}
+      OLLAMA_URL: ${OLLAMA_URL}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+    depends_on:
+      nocobase:
+        condition: service_healthy
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${BACKEND_PORT}/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: ../frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_FIDER_BASE_URL: ${VITE_FIDER_BASE_URL}
+      VITE_BOOKSTACK_BASE_URL: ${VITE_BOOKSTACK_BASE_URL}
+      VITE_OPENPROJECT_BASE_URL: ${VITE_OPENPROJECT_BASE_URL}
+      VITE_NOCBASE_BASE_URL: ${VITE_NOCBASE_BASE_URL}
+      VITE_N8N_BASE_URL: ${VITE_N8N_BASE_URL}
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "${PORTAL_HTTP_PORT}:80"
+      - "${PORTAL_HTTPS_PORT}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+      - nocobase
+      - fider
+      - bookstack
+      - openproject
+      - n8n
+      - ollama
+    networks:
+      - portal_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 6

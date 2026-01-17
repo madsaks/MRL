@@ -1,0 +1,41 @@
+:80 {
+  handle_path /portal/* {
+    reverse_proxy frontend:80
+  }
+
+  handle_path /api/* {
+    reverse_proxy backend:4000
+  }
+
+  handle_path /nocobase/* {
+    reverse_proxy nocobase:13000
+  }
+
+  handle_path /fider/* {
+    reverse_proxy fider:3000
+  }
+
+  handle_path /bookstack/* {
+    reverse_proxy bookstack:80
+  }
+
+  handle_path /openproject/* {
+    reverse_proxy openproject:8080
+  }
+
+  handle_path /n8n/* {
+    reverse_proxy n8n:5678
+  }
+
+  handle_path /ollama/* {
+    reverse_proxy ollama:11434
+  }
+
+  handle /healthz {
+    respond "ok" 200
+  }
+
+  handle {
+    respond "Portal proxy is running" 200
+  }
+}
