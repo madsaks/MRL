@@ -1,0 +1,130 @@
+:root {
+  color: #0f172a;
+  background: #f8fafc;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  padding: 32px;
+}
+
+.app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.app__eyebrow {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #475569;
+}
+
+.app__role {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.app__role label {
+  font-size: 14px;
+  color: #475569;
+}
+
+.app__role select {
+  padding: 8px;
+}
+
+.app__role-label {
+  font-weight: 600;
+}
+
+.app__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.card.accent {
+  border-left: 4px solid #2563eb;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  padding: 8px 10px;
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+}
+
+button {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1e40af;
+}
+
+.link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.link-list a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.link-list a:hover {
+  text-decoration: underline;
+}
+
+.notice {
+  background: #eff6ff;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+}
+
+.muted {
+  color: #64748b;
+}
